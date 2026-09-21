@@ -1,0 +1,12 @@
+const r    = require('express').Router();
+const c    = require('../controllers/authController');
+const { protect }  = require('../middleware/auth');
+const { validate } = require('../middleware/validate');
+r.post('/signup',           validate('signup'), c.signup);
+r.post('/login',            validate('login'),  c.login);
+r.post('/google',                               c.googleAuth);
+r.post('/complete-profile',                     c.completeProfile);
+r.post('/link',                                 c.linkAccount);
+r.get('/me',                protect,            c.getMe);
+r.post('/logout',           protect,            c.logout);
+module.exports = r;

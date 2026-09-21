@@ -1,0 +1,33 @@
+{
+  "name": "vimbiso-agrilink",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev":         "vite",
+    "build":       "vite build",
+    "preview":     "vite preview",
+    "cap:sync":    "npx cap sync",
+    "cap:android": "npx cap open android",
+    "build:apk":   "npm run build && npx cap sync android"
+  },
+  "dependencies": {
+    "react":                "^18.2.0",
+    "react-dom":            "^18.2.0",
+    "react-router-dom":     "^6.21.0",
+    "axios":                "^1.6.2",
+    "socket.io-client":     "^4.6.2",
+    "zustand":              "^4.4.7",
+    "@tanstack/react-query":"^5.14.2",
+    "react-hot-toast":      "^2.4.1",
+    "framer-motion":        "^10.16.16",
+    "@capacitor/core":      "^5.6.0",
+    "@capacitor/android":   "^5.6.0",
+    "@capacitor/splash-screen":"^5.0.7",
+    "@capacitor/status-bar":"^5.0.7"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.2.1",
+    "vite":                 "^5.0.8",
+    "@capacitor/cli":       "^5.6.0"
+  }
+}

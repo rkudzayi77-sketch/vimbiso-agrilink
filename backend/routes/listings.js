@@ -1,0 +1,12 @@
+const r = require('express').Router();
+const c = require('../controllers/listingController');
+const { protect, authorize } = require('../middleware/auth');
+const { validate }           = require('../middleware/validate');
+const { upload }             = require('../middleware/upload');
+r.get('/',      c.getAll);
+r.get('/my',    protect, c.mine);
+r.get('/:id',   c.getOne);
+r.post('/',     protect, authorize('vendor','farmer','admin'), upload.array('images',4), validate('listing'), c.create);
+r.put('/:id',   protect, authorize('vendor','farmer','admin'), c.update);
+r.delete('/:id',protect, authorize('vendor','farmer','admin'), c.remove);
+module.exports = r;
