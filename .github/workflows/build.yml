@@ -1,7 +1,7 @@
 name: Build Vimbiso APK
 on: [push]
 jobs:
-  build-apk:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -12,18 +12,19 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
-      - name: Install frontend
-        run: |
-          cd frontend
-          npm install
+      - name: Install
+        working-directory: frontend
+        run: npm install
+      - name: Prebuild
+        working-directory: frontend
+        run: npx expo prebuild --platform android --clean || echo "skip"
       - name: Build APK
+        working-directory: frontend/android
         run: |
-          cd frontend
-          npx expo prebuild --clean || echo "no prebuild"
-          cd android
           chmod +x gradlew
          ./gradlew assembleDebug
-      - uses: actions/upload-artifact@v4
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
         with:
           name: Vimbiso-APK
-          path: frontend/android/app/build/outputs/apk/debug/*.apk
+          path: frontend/android/app/build/outputs/apk/debug/app-debug.apk
