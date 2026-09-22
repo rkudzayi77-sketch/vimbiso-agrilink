@@ -48,7 +48,7 @@ jobs:
 
       - name: Sync Capacitor
         working-directory: frontend
-        run: npx cap sync android
+        run: npx --yes --package=@capacitor/cli@5 cap sync android
 
       - name: Make Gradle executable
         working-directory: frontend/android
