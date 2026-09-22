@@ -1,0 +1,22 @@
+pluginManagement {
+  includeBuild("../node_modules/@react-native/gradle-plugin")
+}
+plugins {
+  id("com.facebook.react.settings")
+}
+extensions.configure(com.facebook.react.model.kotlindsl.CodegenExt) {
+    reactNativeDir = file("../node_modules/react-native")
+    codegenDir = file("../node_modules/@react-native/codegen")
+    cliFile = file("../node_modules/react-native/cli.js")
+    android { }
+}
+dependencyResolutionManagement {
+  versionCatalogs {
+    reactAndroidLibs {
+        from(files(new File(["node", "--print", "require.resolve('react-native/package.json')"].execute(null, rootDir).text.trim(), "../gradle/libs.versions.toml")))
+    }
+  }
+}
+rootProject.name = 'Vimbiso Agrilink'
+include ':app'
+apply from: new File(["node", "--print", "require.resolve('expo/package.json')"].execute(null, rootDir).text.trim(), "../scripts/autolinking.gradle");
