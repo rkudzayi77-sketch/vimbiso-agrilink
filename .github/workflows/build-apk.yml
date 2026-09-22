@@ -14,11 +14,15 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - run: npm install
-      - run: chmod +x android/gradlew
-      - run:./gradlew assembleRelease
+      - name: Install
+        run: npm install
+      - name: Make gradlew executable
+        run: chmod +x android/gradlew
+      - name: Build APK
         working-directory: android
-      - uses: actions/upload-artifact@v4
+        run:./gradlew assembleRelease --no-daemon
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
         with:
           name: Vimbiso-Agrilink-APK
           path: android/app/build/outputs/apk/release/app-release.apk
