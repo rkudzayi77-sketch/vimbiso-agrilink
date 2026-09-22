@@ -1,26 +1,33 @@
 name: Build APK
-on: [push]
+on:
+  push:
+    branches: [main]
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
         with:
           node-version: 20
-      - uses: actions/setup-java@v4
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
+          distribution: temurin
           java-version: '17'
-      - name: Install & Build
-        run: |
-          cd frontend
-          npm install
-          cd android
-          chmod +x gradlew
-         ./gradlew assembleRelease --no-daemon
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm install
+      - name: Make gradlew executable
+        working-directory: frontend/android
+        run: chmod +x gradlew
+      - name: Build Release APK
+        working-directory: frontend/android
+        run:./gradlew assembleRelease --no-daemon --stacktrace
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: vimbiso-apk
-          path: frontend/android/app/build/outputs/apk/release/*.apk
+          name: Vimbiso-Agrilink-APK
+          path: frontend/android/app/build/outputs/apk/release/app-release.apk
