@@ -1,0 +1,17 @@
+{
+  "expo": {
+    "name": "Vimbiso Agrilink",
+    "slug": "vimbiso-agrilink",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "android": {
+      "package": "com.creatvate.vimbisoagrilink"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "5ea3ffce-7b4f-4140-be85-e4f22cf9cb2d"
+      }
+    },
+    "owner": "director77"
+  }
+}

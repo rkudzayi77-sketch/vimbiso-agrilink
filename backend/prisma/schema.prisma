@@ -1,0 +1,372 @@
+// ═══════════════════════════════════════════════════════
+//  Vimbiso AgriLink — Prisma Schema (Supabase/PostgreSQL)
+// ═══════════════════════════════════════════════════════
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ── USERS ─────────────────────────────────────────────
+model User {
+  id               String   @id @default(cuid())
+  name             String
+  phone            String?  @unique
+  email            String?  @unique
+  pin              String?
+  role             Role     @default(buyer)
+  location         String?
+  zone             String   @default("Harare East")
+  lat              Float?
+  lng              Float?
+  avatar           String   @default("")
+  trustScore       Int      @default(50)
+  authProvider     AuthProvider @default(phone)
+  googleId         String?  @unique
+  isActive         Boolean  @default(true)
+  isOnline         Boolean  @default(false)
+  lastSeen         DateTime @default(now())
+  walletBalance    Float    @default(0)
+  escrowBalance    Float    @default(0)
+  totalTransactions Int     @default(0)
+  avgRating        Float    @default(0)
+  referralCode     String?  @unique
+  referredById     String?
+  gpsShared        Boolean  @default(true)
+  bio              String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // Relations
+  referredBy       User?    @relation("Referrals", fields:[referredById], references:[id])
+  referrals        User[]   @relation("Referrals")
+  listings         Listing[]
+  buyerOrders      Order[]  @relation("BuyerOrders")
+  vendorOrders     Order[]  @relation("VendorOrders")
+  deliveryJobs     DeliveryJob[]
+  transactions     Transaction[]
+  givenRatings     Rating[] @relation("GivenRatings")
+  receivedRatings  Rating[] @relation("ReceivedRatings")
+  trustLoans       TrustLoan[]
+  groupBuysOrganized GroupBuy[] @relation("Organizer")
+  groupBuyMembers  GroupBuyMember[]
+
+  @@map("users")
+}
+
+enum Role {
+  buyer
+  vendor
+  farmer
+  delivery
+  agent
+  admin
+}
+
+enum AuthProvider {
+  phone
+  google
+  linked
+}
+
+// ── LISTINGS ──────────────────────────────────────────
+model Listing {
+  id          String   @id @default(cuid())
+  vendorId    String
+  product     String
+  category    Category
+  price       Float
+  unit        Unit     @default(kg)
+  quantity    Int
+  location    String
+  zone        String   @default("Harare East")
+  lat         Float?
+  lng         Float?
+  images      String[] @default([])
+  description String?
+  draft       Boolean  @default(false)
+  active      Boolean  @default(true)
+  expiresAt   DateTime @default(dbgenerated("NOW() + interval '24 hours'"))
+  views       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  vendor      User     @relation(fields:[vendorId], references:[id], onDelete:Cascade)
+  orders      Order[]
+
+  @@index([zone, active])
+  @@index([category])
+  @@map("listings")
+}
+
+enum Category {
+  Vegetables
+  Fruits
+  Grains
+  Oils
+  Dairy
+  Meat
+  Beverages
+  Other
+}
+
+enum Unit {
+  kg
+  litre
+  crate
+  bundle
+  unit
+  bag
+  dozen
+}
+
+// ── ORDERS ────────────────────────────────────────────
+model Order {
+  id              String      @id @default(cuid())
+  buyerId         String
+  vendorId        String
+  listingId       String
+  product         String
+  quantity        Int
+  unitPrice       Float
+  subtotal        Float
+  platformFee     Float
+  deliveryFee     Float       @default(1.80)
+  total           Float
+  status          OrderStatus @default(pending)
+  escrowStatus    EscrowStatus @default(pending)
+  escrowRef       String?     @unique
+  paymentMethod   PaymentMethod @default(ecocash)
+  deliveryAgentId String?
+  deliveryAddress String?
+  riderLat        Float?
+  riderLng        Float?
+  deliveredAt     DateTime?
+  confirmedAt     DateTime?
+  releasedAt      DateTime?
+  notes           String?
+  disputeReason   String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  buyer           User        @relation("BuyerOrders",   fields:[buyerId],   references:[id])
+  vendor          User        @relation("VendorOrders",  fields:[vendorId],  references:[id])
+  listing         Listing     @relation(fields:[listingId], references:[id])
+  deliveryJob     DeliveryJob?
+  transactions    Transaction[]
+
+  @@index([buyerId, status])
+  @@index([vendorId, status])
+  @@map("orders")
+}
+
+enum OrderStatus {
+  pending
+  accepted
+  rejected
+  in_transit
+  delivered
+  completed
+  disputed
+  refunded
+}
+
+enum EscrowStatus {
+  pending
+  held
+  released
+  refunded
+}
+
+enum PaymentMethod {
+  ecocash
+  innbucks
+  onemoney
+  cash
+}
+
+// ── DELIVERY JOBS ─────────────────────────────────────
+model DeliveryJob {
+  id               String    @id @default(cuid())
+  orderId          String    @unique
+  vendorId         String?
+  buyerId          String?
+  agentId          String?
+  product          String?
+  weight           String?
+  fromAddress      String?
+  fromLat          Float?
+  fromLng          Float?
+  toAddress        String?
+  toLat            Float?
+  toLng            Float?
+  distance         Float?
+  pay              Float
+  status           JobStatus @default(auction)
+  auctionExpiresAt DateTime  @default(dbgenerated("NOW() + interval '2 minutes'"))
+  acceptedAt       DateTime?
+  completedAt      DateTime?
+  createdAt        DateTime  @default(now())
+
+  order            Order     @relation(fields:[orderId], references:[id])
+  agent            User?     @relation(fields:[agentId], references:[id])
+
+  @@map("delivery_jobs")
+}
+
+enum JobStatus {
+  auction
+  assigned
+  in_progress
+  completed
+  expired
+}
+
+// ── TRANSACTIONS ──────────────────────────────────────
+model Transaction {
+  id          String          @id @default(cuid())
+  userId      String
+  orderId     String?
+  type        TransactionType
+  amount      Float
+  description String?
+  reference   String?
+  method      String?
+  status      TxStatus        @default(completed)
+  createdAt   DateTime        @default(now())
+
+  user        User            @relation(fields:[userId], references:[id])
+  order       Order?          @relation(fields:[orderId], references:[id])
+
+  @@index([userId])
+  @@map("transactions")
+}
+
+enum TransactionType {
+  credit
+  debit
+  escrow_hold
+  escrow_release
+  withdrawal
+  loan_credit
+  loan_repay
+  referral_reward
+}
+
+enum TxStatus {
+  pending
+  completed
+  failed
+}
+
+// ── WAITLIST ──────────────────────────────────────────
+model Waitlist {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String
+  role      Role     @default(buyer)
+  zone      String?
+  notes     String?
+  contacted Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@map("waitlist")
+}
+
+// ── PRICES ────────────────────────────────────────────
+model Price {
+  id       String   @id @default(cuid())
+  product  String
+  category String?
+  zone     String
+  price    Float
+  unit     String   @default("kg")
+  trend    String   @default("stable")
+  trendPct Float    @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([product, zone])
+  @@map("prices")
+}
+
+// ── RATINGS ───────────────────────────────────────────
+model Rating {
+  id         String   @id @default(cuid())
+  fromUserId String
+  toUserId   String
+  score      Int
+  comment    String?
+  createdAt  DateTime @default(now())
+
+  fromUser   User     @relation("GivenRatings",    fields:[fromUserId], references:[id])
+  toUser     User     @relation("ReceivedRatings", fields:[toUserId],   references:[id])
+
+  @@map("ratings")
+}
+
+// ── TRUST LOANS ───────────────────────────────────────
+model TrustLoan {
+  id             String    @id @default(cuid())
+  userId         String
+  amount         Float
+  fee            Float
+  totalRepayable Float
+  status         LoanStatus @default(active)
+  reference      String?   @unique
+  repaidAt       DateTime?
+  createdAt      DateTime  @default(now())
+
+  user           User      @relation(fields:[userId], references:[id])
+
+  @@map("trust_loans")
+}
+
+enum LoanStatus {
+  active
+  repaid
+  defaulted
+}
+
+// ── GROUP BUYS ────────────────────────────────────────
+model GroupBuy {
+  id          String    @id @default(cuid())
+  organizerId String
+  product     String
+  targetQty   Int
+  unitPrice   Float
+  zone        String?
+  deadline    DateTime
+  status      GroupStatus @default(open)
+  savings     Int       @default(15)
+  createdAt   DateTime  @default(now())
+
+  organizer   User      @relation("Organizer", fields:[organizerId], references:[id])
+  members     GroupBuyMember[]
+
+  @@map("group_buys")
+}
+
+enum GroupStatus {
+  open
+  filled
+  completed
+  cancelled
+}
+
+model GroupBuyMember {
+  id         String   @id @default(cuid())
+  groupBuyId String
+  userId     String
+  joinedAt   DateTime @default(now())
+
+  groupBuy   GroupBuy @relation(fields:[groupBuyId], references:[id])
+  user       User     @relation(fields:[userId],     references:[id])
+
+  @@unique([groupBuyId, userId])
+  @@map("group_buy_members")
+}
