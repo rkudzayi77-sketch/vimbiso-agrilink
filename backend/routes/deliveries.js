@@ -1,0 +1,10 @@
+const r = require('express').Router();
+const c = require('../controllers/deliveryController');
+const { protect, authorize } = require('../middleware/auth');
+r.get('/jobs',                protect, authorize('delivery','admin'), c.getJobs);
+r.get('/my-jobs',             protect, authorize('delivery'),         c.myJobs);
+r.post('/jobs/:id/accept',    protect, authorize('delivery'),         c.acceptJob);
+r.post('/jobs/:id/complete',  protect, authorize('delivery'),         c.completeJob);
+r.post('/location',           protect, authorize('delivery'),         c.updateLocation);
+r.post('/toggle-online',      protect, authorize('delivery'),         c.toggleOnline);
+module.exports = r;
